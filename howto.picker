@@ -1,0 +1,40 @@
+======================
+Running the Autopicker
+======================
+
+Step 1: Detect potential events
+gest_beta <gest_beta.spec>
+	filelist: find SAC | grep "\.SAC" > filelist.SAC
+	datalist: copy datalist from jan23
+		awk '$[column]="[new_value]"' datalist.stns >> updated_datalist.stns
+	OUTPUTS: detect.list
+
+Step 2: Sort events
+sort -n detect.list > detect.list.sort
+	OUTPUTS: detect.list.sort
+
+Step 3: Collect detections into events
+collect_events <collect_events.spec>
+	OUTPUTS: event.file, collect_events.log, collect_events.missed
+
+Step 4: Window events
+window_sac_beta <window_sac.spec>
+	station.codes: awk '{print $2}' datalist.stns >> station.codes
+	channel.codes: BHE, BHN, BHZ
+
+Step 5:
+runall_rest_beta
+	move runall_rest_beta.csh to WINDOWS directory
+	Need: 	rest.spec
+		rest2.spec
+		rest3.spec
+		rest4.spec
+		illap0.spec
+		illap1.spec
+		illap2.spec
+	Copy ttimes0 to working directory
+	Copy parfiles "
+	Copy Ptimes.prism "
+	Copy Stimes.prism "
+	Copy tempvela "
+	(Where is the alaska_3d.mod?)

@@ -1,0 +1,48 @@
+====================================
+Constructing timetables and parfiles
+====================================
+
+Make all.stns:
+	rdseed -S -f [SEED FILE]
+	# creates rdseed.stations
+	# all.stns: 0.00	0.00	ELEV		STATION		LAT		LON		0.0		0.0    ZCOMP
+	awk '{print "0.0\t0.0",$5,$1,$3,$4, "\t0.0\t0.0\tBHZ"}' rdseed.stations > all.stns
+
+
+(1) Parfiles:
+	if (-d parfiles) rm -r parfiles
+	mkdir parfiles
+
+	# change illap0.spec timedir to ./ttimes and stafile ./all.stns
+
+	makeparmfiles illap0.spec
+
+	mv *.par *.spar parfiles
+
+(2) Timetables:
+
+	# mv tempvela.pvel ttimes0/VP.mod
+	# mv tempvela.svel ttimes0/VS.mod
+
+
+	cd ttimes0
+	ls ../parfiles/* > runsphfd
+	ex runsphfd << !
+	g/./s/^/sphfd par=\"/
+	g/./s/\$/"/
+	w
+	q
+	!
+
+	split -l [number stations/number of processes i can do] runsphfd
+
+	ls x* > runall
+	ex runall << !
+	g/./s/^/csh /
+	g/./s/\$/ \&/
+	g/./s/\*//
+	w
+	q
+	!
+
+	echo "wait" >> runall
