@@ -63,6 +63,19 @@ awk '{print $2, $1, var1, var2, 0, 0, var3, var4, 0, 0, 1, var5}' var1="$yr1" va
 mv datalist.stns ../.
 cd ..
 
+
+################ make station.codes #################
+awk '{print $2}' datalist.stns > station.codes
+
+
+################ make channel.codes #################
+cd SEED
+sed 's/"/ /g' rdseed.stations > noquotes
+awk 'FNR == 1 {print $6 "\n" $7 "\n" $8}' noquotes > channel.codes
+mv channel.codes ../.
+cd ..
+
+
 ################ run autopicker ################
 # Detect
 gest_beta gest_beta.spec
@@ -74,7 +87,7 @@ sort -n detect.list > detect.list.sort
 collect_events collect_events.spec
 
 # Window events
-# window_sac_beta window_sac.spec
+window_sac_beta window_sac.spec
 
 # Onset time and location estimation
 # runall_rest_beta
