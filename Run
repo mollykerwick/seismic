@@ -1,17 +1,36 @@
 #!/bin/csh
 
+############# NEEDED FOR RUN TEST ##############
+#                                              #
+#    Seed file in SEED directory               #
+#    gest_beta.spec                            #
+#    collect_events.spec                       #
+#    window_sac.spec			       #
+#    rest(-4).spec			       #
+#    illap(0-2).spec 			       #
+#					       #
+################################################
+
 set usr	=	mollykerwick
-set sdfile = 	MOOS_test2.850171.seed
+set sdfile = 	January_23_aupick_data.280209.seed
 set procnum =	25
 # procnum = number stations/number of processes i can do
 set zcomp =	BHZ
-set yr1 =	2006
-set yr2 =	2006
-set dy1 = 	170
-set dy2 = 	190
+set yr1 =	2018
+set yr2 =	2018
+set dy1 = 	1
+set dy2 = 	31
 
 
 sudo chown -R $usr .
+
+############### make SAC ###############
+
+#if (-d SAC) rm -r SAC
+#mkdir SAC
+#cd SEED
+#rdseed -d -f sdfile
+#find . -name '*.SAC' -exec mv {} ../SAC \;
 
 
 ################ make all.stns ################
@@ -69,11 +88,11 @@ awk '{print $2}' datalist.stns > station.codes
 
 
 ################ make channel.codes #################
-cd SEED
-sed 's/"/ /g' rdseed.stations > noquotes
-awk 'FNR == 1 {print $6 "\n" $7 "\n" $8}' noquotes > channel.codes
-mv channel.codes ../.
-cd ..
+#cd SEED
+#sed 's/"/ /g' rdseed.stations > noquotes
+#awk 'FNR == 1 {print $6 "\n" $7 "\n" $8}' noquotes > channel.codes
+#mv channel.codes ../.
+#cd ..
 
 
 ################ run autopicker ################
