@@ -26,11 +26,12 @@ sudo chown -R $usr .
 
 ############### make SAC ###############
 
-#if (-d SAC) rm -r SAC
-#mkdir SAC
-#cd SEED
-#rdseed -d -f sdfile
-#find . -name '*.SAC' -exec mv {} ../SAC \;
+if (-d SAC) then
+	echo "Creating SAC files"
+	mkdir SAC
+	cd SEED
+	rdseed -d -f sdfile
+	find . -name '*.SAC' -exec mv {} ../SAC \;
 
 
 ################ make all.stns ################
