@@ -3,35 +3,39 @@
 ############# NEEDED FOR RUN TEST ##############
 #                                              #
 #    Seed file in SEED directory               #
+#    VP.mod and VS.mod files in working dir    #
+#    runall_rest_beta in working dir           #
 #    gest_beta.spec                            #
 #    collect_events.spec                       #
-#    window_sac.spec			       #
-#    rest(-4).spec			       #
-#    illap(0-2).spec 			       #
-#					       #
+#    window_sac.spec                           #
+#    rest(-4).spec                             #
+#    illap(0-2).spec                           #
+#                                              #
 ################################################
 
 set usr	=	mollykerwick
-set sdfile = 	January_23_aupick_data.280209.seed
+set sdfile = 	MOOS_3.649923.seed
 set procnum =	25
 # procnum = number stations/number of processes i can do
 set zcomp =	BHZ
-set yr1 =	2018
-set yr2 =	2018
-set dy1 = 	1
-set dy2 = 	31
+set yr1 =	2006
+set yr2 =	2006
+set dy1 = 	210
+set dy2 = 	250
 
+echo "variables set"
 
 sudo chown -R $usr .
 
 ############### make SAC ###############
-
-if (-d SAC) then
+if (! -d SAC) then
 	echo "Creating SAC files"
 	mkdir SAC
 	cd SEED
-	rdseed -d -f sdfile
+	rdseed -d -f $sdfile
 	find . -name '*.SAC' -exec mv {} ../SAC \;
+	cd ..
+endif
 
 
 ################ make all.stns ################
@@ -70,11 +74,21 @@ w
 q
 !
 echo "wait" >> runall
+
+mv ../*mod .
+csh runall
+
 cd ..
+
+
 
 
 ################ make filelist.SAC ################
 find SAC | grep "\.SAC" > filelist.SAC
+
+
+################ make filelist.zcomp #################
+find SAC | grep "\BHZ" > filelist.zcomp
 
 
 ################ make datalist.stns ##################
@@ -95,6 +109,10 @@ awk '{print $2}' datalist.stns > station.codes
 #mv channel.codes ../.
 #cd ..
 
+echo "BHZ" > channel.codes
+echo "BHE" >> channel.codes
+echo "BHN" >> channel.codes
+
 
 ################ run autopicker ################
 # Detect
@@ -110,4 +128,6 @@ collect_events collect_events.spec
 window_sac_beta window_sac.spec
 
 # Onset time and location estimation
+mv runall_rest_beta WINDOWS
+cd WINDOWS
 # runall_rest_beta
