@@ -1,0 +1,406 @@
+#!/bin/tcsh
+#
+#  Shell scirpt for automatic catalogue generation
+#  How this works:
+#	1.  Start with an estimate of P arrivals from the phase detection file
+#		The windows at this point should be generous
+#	    Run rest to provide a first P onset on the Z component
+#	    Convert the picks to format
+#	    Attempt a location with fdloc
+#	    Generate a set of synthetic picks with this trial location
+#	2.  Run rest again on Z using the syn picks as a start with a less generous window
+#	    Convert and locate again
+#	3.  Use this location to estimate P and S, but only if the event is inbounds 
+#
+#
+#
+########################################################################################
+#  USER SPECIFIC SETTINGS FOR THIS SHELL
+#
+#  Make sure that the following assingments are appropriate for your dataset and directory
+#  hierarchy.   
+#  
+set rspec1 = ../../rest.spec
+set rspec2 = ../../rest2.spec
+set rspec3 = ../../rest3.spec
+set rspec4 = ../../rest4.spec
+set fspec1 = ../../illap0.spec
+set fspec2 = ../../illap1.spec
+set fspec3 = ../../illap1.spec
+set fspec4 = ../../illap2.spec
+
+#  This is the prefix for the components (e.g., H for *HZ, *HE, *HN).  All the SAC files
+#  are presumed to end in Z, E, and N for the corresponding channel.
+set prefix = "H" 
+
+#  This is a prefix used to identity all of the event subdirectories.  For example, if
+#  all the relevant subdirectories start with "20" (as they normally would for events occuring
+#  in the 21 century), use "20"
+set prefev = "20"
+
+# You can set "doedge" to eliminate events that are reported to be located on the edge of the 
+# model in the first three stages of location.  A good choice can be to allow an ONEDGE
+# location the first stage because the original picks are probably not great.
+#
+set doedge1 = "0"
+set doedge2 = "1"
+set doedge3 = "1"
+
+#  END USER SPECIFIC SETTINGS FOR THIS SHELL
+########################################################################################
+
+set genfix = "*"$prefix"?"
+
+# Check to set that the programs needed to run this script exist
+foreach prog ( \
+fd2pick \
+pick2fd \
+rest_beta \
+rmzerolen.csh \
+sphfdloc_beta \
+sphfdsyn \
+)
+set mustex = ` which $prog `
+if  ($#mustex == 1) then
+        echo $prog exists
+else
+        echo $prog is required for this shell but does not exist
+        echo $prog is required for this shell but does not exist >> runall_rest.err
+	exit
+endif
+end
+
+#   
+foreach dir ( [$prefev]* )
+#   
+   cd $dir
+
+# Start with a clean plate
+   rm a* b* f* r* s* t* *.est *.est_asc *.err
+   rm -r loc*
+
+# Check to set that the files needed to run this script exist
+foreach file ( \
+$rspec1 \
+$rspec2 \
+$rspec3 \
+$rspec4 \
+$fspec1 \
+$fspec2 \
+$fspec3 \
+$fspec4 \
+)
+
+if (-e $file) then
+	echo $file exists
+else
+	echo $file does not exist and is required for this shell
+	echo $file does not exist and is required for this shell >> runall_rest.err
+	exit
+endif
+end
+   
+#  1:  Run rest to get an initial set of picks from the Z component
+   
+   ls *$prefix"Z" > trace.list
+   
+# Get rid of known dead traces
+   if (-e ../exbad.csh) csh ../exbad.csh
+   
+  if (-e arrt.picks) rm arrt.picks
+  cp $dir.pickfile arrt.picks
+  echo "********************************************"
+  echo " Stage 1 run of rest_beta with "$rspec1
+  echo "********************************************"
+  rest_beta $rspec1
+  if (-e rest.err) then
+	echo "rest_beta exited after stage 1" 
+	echo "rest_beta exited after stage 1" >> runall_rest.err
+	cd ..
+	continue
+  endif
+   
+#  2:  Turn the first set of picks into an fdloc file
+   
+set pfile = ` grep pickfile $rspec1  `
+  echo "********************************************"
+  echo " Stage 1 run of pick2fd with "$pfile[2]
+  echo "********************************************"
+pick2fd << !
+$pfile[2]
+!
+
+  if (-e fdloc.final) rm fdloc.final
+  cp fdloc.data fdloc.final
+  if (-e final.pickfile) rm final.pickfile
+  cp $pfile[2] final.pickfile
+   
+#  3:  Try locating the events with the raw picks to get an idea of where the event is 
+  echo "********************************************"
+  echo " Stage 1 run of sphfdloc_beta  with "$fspec1
+  echo "********************************************"
+   rmzerolen.csh
+   sphfdloc_beta $fspec1
+   if (-e sphfdloc_beta.err) then
+        echo "sphfdloc_beta exited after stage 1" 
+        echo "sphfdloc_beta exited after stage 1" >> runall_rest.err
+	cd ..
+	continue
+   endif
+   
+#  3.1: Save the results
+   if (-d loc1) rm -r loc1
+   mkdir loc1
+   mv fdloc.ndat fdloc.outliers fdloc.sumout sphfdloc.log1 rest.log fdloc.data loc1
+   cp fdloc.nheads loc1
+   set nout = ` grep ONEDGE fdloc.nheads | wc `
+   if ( $doedge1 == 1 && $nout[1] != "0") then
+	echo ' Event is ONEDGE; stopping '
+	echo ' Stage 1: Event is ONEDGE; stopping ' >> runall_rest.err
+   else
+
+#  4:  Generate a synthetic datafile to estimate where the picks should be
+  if (-s fdloc.nheads) then
+  	cp fdloc.nheads fdloc.data
+#  4.1:  Run sphfdsyn to geneate the synthetic data
+  echo "********************************************"
+  echo " Stage 1 run of sphfdsyn with "$fspec1
+  echo "********************************************"
+        rmzerolen.csh
+  	sphfdsyn $fspec1
+        if (-e sphfdsyn.err) then
+        	echo "sphfdsyn exited after stage 1"
+	        echo "sphfdsyn exited after stage 1" >> runall_rest.err
+	        cd ..
+        	continue
+        endif
+
+  	mv fdloc.ndat syn.data
+  
+# 4.2:  Turn the fdloc output into a pickfile
+  echo "********************************************"
+  echo " Stage 1 run of fd2pick"
+  echo "********************************************"
+fd2pick << !
+syn.data
+!
+  	if (-e syn.picks) rm syn.picks
+   	mv fort.8 syn.picks
+   
+# 5:  run rest again to restimate 
+  echo "********************************************"
+  echo " Stage 2 run of rest_beta with "$rspec1
+  echo "********************************************"
+   	rest_beta $rspec2
+  	if (-e rest.err) then
+        	echo "rest_beta exited after stage 2" 
+        	echo "rest_beta exited after stage 2" >> runall_rest.err
+		cd ..
+	        continue
+	endif
+   
+# 6:  Turn the first set of picks into an fdloc file
+   
+   	set pfile = ` grep pickfile $rspec2  `
+  echo "********************************************"
+  echo " Stage 2 run of pick2fd with "$pfile[2]
+  echo "********************************************"
+pick2fd << !
+$pfile[2]
+!
+  if (-e fdloc.final) rm fdloc.final
+  cp fdloc.data fdloc.final
+  if (-e final.pickfile) rm final.pickfile
+  cp $pfile[2] final.pickfile
+   
+# 7:  Try locating the events with the raw picks to get an idea of where the event is
+  echo "********************************************"
+  echo " Stage 2 run of sphfdloc_beta  with "$fspec2
+  echo "********************************************"
+        rmzerolen.csh
+   	sphfdloc_beta $fspec2
+   	if (-e sphfdloc_beta.err) then
+        	echo "sphfdloc_beta exited after stage 2"
+        	echo "sphfdloc_beta exited after stage 2" >> runall_rest.err
+		cd ..
+        	continue
+   	endif
+
+# 7.1: Save the results
+   	if (-d loc2) rm -r loc2
+   	mkdir loc2
+   	mv fdloc.ndat fdloc.outliers fdloc.sumout sphfdloc.log1 rest.log fdloc.data loc2
+   	mv syn.picks syn.data loc2
+   	cp fdloc.nheads loc2
+   
+   	if (-s fdloc.nheads) then
+   		cp fdloc.nheads fdloc.data
+# 8.1:  Run sphfdsyn to geneate the synthetic data
+  echo "********************************************"
+  echo " Stage 2 run of sphfdsyn with "$fspec2
+  echo "********************************************"
+                rmzerolen.csh
+   		sphfdsyn $fspec2
+        	if (-e sphfdsyn.err) then
+                	echo "sphfdsyn exited after stage 2"
+                	echo "sphfdsyn exited after stage 2" >> runall_rest.err
+			cd ..
+                	continue
+        	endif
+
+   		mv fdloc.ndat syn.data
+   
+# 8.2:  Turn the fdloc output into a pickfile
+  echo "********************************************"
+  echo " Stage 2 run of fd2pick"
+  echo "********************************************"
+fd2pick << !
+syn.data
+!
+   		if (-e syn.picks) rm syn.picks
+   		mv fort.8 syn.picks
+   
+   
+# 9:  New see about S waves; but only do this step if the event is inbounds
+		set nout = ` grep ONEDGE fdloc.nheads | wc `
+                if ( $doedge2 == 1 && $nout[1] != "0") then
+		        echo ' Event is ONEDGE; stopping '
+		        echo ' Stage 2: Event is ONEDGE; stopping ' >> runall_rest.err
+		else
+		        echo ' Event is inbounds'
+			rm trace.list
+			ls $genfix > trace.list
+   			if (-e ../exbad.csh) csh ../exbad.csh
+  echo "********************************************"
+  echo " Stage 3 run of rest_beta with "$rspec3
+  echo "********************************************"
+   			rest_beta $rspec3
+  			if (-e rest.err) then
+        			echo "rest_beta exited after stage 3" 
+        			echo "rest_beta exited after stage 3" >> runall_rest.err
+				cd ..
+        			continue
+  			endif
+
+   			set pfile = ` grep pickfile $rspec3  `
+
+  echo "********************************************"
+  echo " Stage 3 run of pick2fd with "$pfile[2]
+  echo "********************************************"
+pick2fd << !
+$pfile[2]
+!
+  			if (-e fdloc.final) rm fdloc.final
+			cp fdloc.data fdloc.final
+  			if (-e final.pickfile) rm final.pickfile
+  			cp $pfile[2] final.pickfile
+# Another round of location
+  echo "********************************************"
+  echo " Stage 3 run of sphfdloc_beta  with "$fspec3
+  echo "********************************************"
+                        rmzerolen.csh
+   			sphfdloc_beta $fspec3
+			if (-e sphfdloc_beta.err) then
+        			echo "sphfdloc_beta exited after stage 3"
+        			echo "sphfdloc_beta exited after stage 3" >> runall_rest.err
+				cd ..
+        			continue
+   			endif
+# Save the results
+   			if (-d loc3) rm -r loc3
+   			mkdir loc3
+   			mv fdloc.ndat fdloc.outliers fdloc.sumout sphfdloc.log1 rest.log fdloc.data loc3
+   			mv syn.picks syn.data loc3
+   			cp fdloc.nheads loc3
+
+   			if (-s fdloc.nheads) then
+   				cp fdloc.nheads fdloc.data
+  echo "********************************************"
+  echo " Stage 3 run of sphfdsyn with "$fspec3
+  echo "********************************************"
+                                rmzerolen.csh
+   				sphfdsyn $fspec3
+				if (-e sphfdsyn.err) then
+                			echo "sphfdsyn exited after stage 3"
+                			echo "sphfdsyn exited after stage 3" >> runall_rest.err
+					cd ..
+                			continue
+        			endif
+   				mv fdloc.ndat syn.data
+  echo "********************************************"
+  echo " Stage 3 run of fd2pick"
+  echo "********************************************"
+
+fd2pick << !
+syn.data
+!
+   				if (-e syn.picks) rm syn.picks
+   				mv fort.8 syn.picks
+				set nout = ` grep ONEDGE fdloc.nheads | wc `
+                 		if ( $doedge3 == 1 && $nout[1] != "0") then
+		        		echo ' Event is ONEDGE; stopping '
+				        echo ' Stage 3: Event is ONEDGE; stopping ' >> runall_rest.err
+				else
+		        		echo ' Event is inbounds'
+					rm trace.list
+					ls $genfix > trace.list
+   					if (-e ../exbad.csh) csh ../exbad.csh
+  echo "********************************************"
+  echo " Stage 4 run of rest_beta with "$rspec4
+  echo "********************************************"
+   					rest_beta $rspec4
+					if (-e rest.err) then
+					        echo "rest_beta exited after stage 4" 
+					        echo "rest_beta exited after stage 4" >> runall_rest.err
+						cd ..
+					        continue
+					endif
+   					set pfile = ` grep pickfile $rspec4  `
+  echo "********************************************"
+  echo " Stage 4 run of pick2fd with "$pfile[2]
+  echo "********************************************"
+
+pick2fd << !
+$pfile[2]
+!
+  					if (-e fdloc.final) rm fdloc.final
+					cp fdloc.data fdloc.final
+  					if (-e final.pickfile) rm final.pickfile
+  					cp $pfile[2] final.pickfile
+# Final round of location
+  echo "********************************************"
+  echo " Stage 4 run of sphfdloc_beta  with "$fspec4
+  echo "********************************************"
+					rmzerolen.csh
+                        		sphfdloc_beta $fspec4
+					if (-e sphfdloc_beta.err) then
+					        echo "sphfdloc_beta exited after stage 4"
+					        echo "sphfdloc_beta exited after stage 4" >> runall_rest.err
+						cd ..
+					        continue
+					endif
+# Save the results
+                        		if (-d loc4) rm -r loc4
+                        		mkdir loc4
+  					if (-e fdloc.final) rm fdloc.final
+					cp fdloc.ndat fdloc.final
+                        		mv fdloc.ndat fdloc.outliers fdloc.sumout sphfdloc.log1 rest.log fdloc.data loc4
+                        		mv syn.picks syn.data loc4
+                        		cp fdloc.nheads loc4
+# Stage 3 ONEDGE
+				endif
+# fdloc.nheads blockif
+			endif
+# Stage 2 ONEDGE
+		endif
+# fdloc.nheads blockif
+	endif
+# fdloc.nheads blockif
+  endif
+# Stage 1 ONEDGE
+   endif
+   
+   cd ..
+   
+end
+#   
