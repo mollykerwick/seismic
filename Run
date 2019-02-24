@@ -14,14 +14,14 @@
 ################################################
 
 set usr	=	mollykerwick
-set sdfile = 	MOOS_3.649923.seed
+set sdfile = 	MOOS_1.988385.seed
 set procnum =	25
 # procnum = number stations/number of processes i can do
 set zcomp =	BHZ
 set yr1 =	2006
 set yr2 =	2006
-set dy1 = 	210
-set dy2 = 	250
+set dy1 = 	175
+set dy2 = 	193
 
 echo "variables set"
 
