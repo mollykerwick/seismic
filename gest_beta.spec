@@ -13,7 +13,7 @@ overlap   60.0
 
 iirf  2
 npolelo 6
-passlo  9.0
+passlo  -0.5
 npolehi 6
 passhi  1.0
 
