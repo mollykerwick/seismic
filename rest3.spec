@@ -28,7 +28,7 @@ iirf   2
 npolelo   6
 npolehi   6
 passhi   1.0
-passlo   10.0
+passlo   -0.5
 
 #  thresholds for phase detection (R score)
 prthres   1.0
