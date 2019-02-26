@@ -110,7 +110,7 @@ vs1d		1
 oldvfil		alaska_3d.mod
 
 # Travel time directory
-timedir	../ttimes0		# 1D background model
+timedir	../../ttimes0		# 1D background model
 #
 # FDLOC Input
 #
@@ -124,7 +124,7 @@ outlfil 	fdloc.outliers		#  Outliers
 fhedfil		fdloc.nheads		#  New Headers
 fdatfil 	fdloc.ndat		#  New Data - output from sphfdsyn also
 #
-stafile		../all.stns.BB		# Station List
+stafile		../../all.stns		# Station List
 #
 # Fine model file name (P and S): Output from c2f
 #
