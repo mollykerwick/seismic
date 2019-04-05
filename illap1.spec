@@ -22,21 +22,21 @@
 #
 #------Origin of the model.  This lat (y0), lon (x0), depth (z0) specifies the location of the upper
 #	NW corner of the grid.
-        x0   -170.70
-        y0   71.55
+        x0   -151.384
+        y0   62.7433
         z0   -30.0
 
 #------Fine grid spacing (dq, df, h).  h is the depth spacing in km, dq and df the latitude and longitude
 #	spacing in degrees.  Note that if dq and df are not specified they will be computed
 #      in the software to match h for the origin chosen.
 #
-        h  10.0
+        h  3.0
 
 #------Coarse grid specifications
 #  nxc, nyc, and nzc are the number of nodes in the x, y, and z directions
-        nxc 207
-        nyc 210
-	nzc 84
+        nxc 65
+        nyc 111
+	nzc 74
 
 #  These are the number of fine grid spaces between the coarse grid points.  There
 #  should be at least (nxc-1) of these specified for igridx, and similar for igridy and igridz
@@ -101,11 +101,11 @@
 #                          ****FILE CONNECTIONS****
 #
 # Table for building the 1D model (make1d).  Output from make1d goes to oldvfil.
-onedfil		IASP91.mod
+onedfil		mod.1d
 vs1d		1
 
 # Starting Coarse model file name (P and S)
-oldvfil		alaska_3d.mod
+oldvfil		illap.mod1d
 
 # Travel time directory
 timedir	../../ttimes0		# 1D background model
