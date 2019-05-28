@@ -1,4 +1,4 @@
-filelist    filelist.SAC
+filelist    filelist.zcomp
 datalist    datalist.stns
 pickfile    detect.list
 
@@ -6,7 +6,7 @@ detect  T
 swap    0
 
 pfact   100.0
-detout  T
+detout  F
 
 duration  420.0
 overlap   60.0
