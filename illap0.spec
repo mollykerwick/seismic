@@ -22,8 +22,8 @@
 #
 #------Origin of the model.  This lat (y0), lon (x0), depth (z0) specifies the location of the upper
 #	NW corner of the grid.
-        x0   -151.384
-        y0   62.7433
+        x0   -151.444
+        y0   62.7702
         z0   -30.0
 
 #------Fine grid spacing (dq, df, h).  h is the depth spacing in km, dq and df the latitude and longitude
@@ -31,14 +31,14 @@
 #      in the software to match h for the origin chosen.
 #
         h  3.0
-	df 0.200
-	dq 0.090
+#	df 0.200
+#	dq 0.090
 
 
 #------Coarse grid specifications
 #  nxc, nyc, and nzc are the number of nodes in the x, y, and z directions
-        nxc 65
-        nyc 111
+        nxc 66
+        nyc 112
 	nzc 74
 
 #  These are the number of fine grid spaces between the coarse grid points.  There
@@ -109,7 +109,7 @@ vs1d		1
 oldvfil		illap.mod1d
 
 # Travel time directory
-timedir	../../ttimes0		# 1D background model
+timedir	  	./ttimes0		# 1D background model
 #
 # FDLOC Input
 #
@@ -123,7 +123,7 @@ outlfil 	fdloc.outliers		#  Outliers
 fhedfil		fdloc.nheads		#  New Headers
 fdatfil 	fdloc.ndat		#  New Data - output from sphfdsyn also
 #
-stafile		../../all.stns		# Station List
+stafile		./all.stns		# Station List
 #
 # Fine model file name (P and S): Output from c2f
 #
